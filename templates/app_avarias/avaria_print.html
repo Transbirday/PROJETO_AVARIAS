@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ficha de Avaria #{{ avaria.id }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            /* Pequeno para caber mais */
+            color: #000;
+            background: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            margin-top: 5px;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .header {
+            border-bottom: 2px solid #000;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section {
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            break-inside: avoid;
+        }
+
+        .section-title {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 9pt;
+            background: #f0f0f0;
+            padding: 3px 5px;
+            margin: -10px -10px 10px -10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-right: -5px;
+            margin-left: -5px;
+        }
+
+        .col {
+            padding-right: 5px;
+            padding-left: 5px;
+            flex: 1;
+        }
+
+        .label {
+            font-size: 8pt;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .value {
+            font-weight: bold;
+            font-size: 10pt;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+            margin-bottom: 5px;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #ccc;
+        }
+
+        th,
+        td {
+            padding: 4px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f9f9f9;
+        }
+
+        .history-box {
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 8pt;
+            border: 1px solid #eee;
+            padding: 5px;
+            background: #fdfdfd;
+        }
+
+        .photos-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .photo-item {
+            border: 1px solid #ddd;
+            padding: 2px;
+            text-align: center;
+            break-inside: avoid;
+        }
+
+        .photo-item img {
+            max-width: 100%;
+            height: auto;
+            max-height: 150px;
+        }
+
+        .photo-meta {
+            font-size: 7pt;
+            color: #555;
+            margin-top: 2px;
+        }
+
+        /* Hide print buttons when printing */
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="no-print" style="margin-bottom: 10px; text-align: right;">
+        <button onclick="window.print()" style="padding: 10px 20px; cursor: pointer; font-size: 12pt;">🖨️ Imprimir
+            agora</button>
+        <button onclick="window.close()" style="padding: 10px 20px; cursor: pointer; font-size: 12pt;">Fechar</button>
+    </div>
+
+    <div class="header">
+        <div>
+            <h1>Ficha de Avaria #{{ avaria.id }}</h1>
+            <div style="font-size: 9pt;">Data de Criação: {{ avaria.data_criacao|date:"d/m/Y H:i" }}</div>
+        </div>
+        <div style="text-align: right;">
+            <strong>Status:</strong> {{ avaria.get_status_display }}<br>
+            <strong>Local:</strong> {{ avaria.local_atuacao|default:"-" }}
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Dados da Carga e Cliente</div>
+        <div class="row">
+            <div class="col">
+                <div class="label">Cliente</div>
+                <div class="value">{{ avaria.cliente.razao_social }} <span
+                        style="font-weight: normal; font-size: 8pt;">({{ avaria.cliente.cnpj }})</span></div>
+            </div>
+        </div>
+        <div class="row" style="margin-top: 5px;">
+            <div class="col">
+                <div class="label">Nota Fiscal</div>
+                <div class="value">{{ avaria.nota_fiscal }}</div>
+            </div>
+            <div class="col">
+                <div class="label">Valor NF</div>
+                <div class="value">R$ {{ avaria.valor_nf|default:"0,00" }}</div>
+            </div>
+            <div class="col">
+                <div class="label">Criado Por</div>
+                <div class="value">{{ avaria.criado_por.get_full_name|default:avaria.criado_por.username }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Itens da Avaria</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Laboratório</th>
+                    <th>Lote</th>
+                    <th>Qtd.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in avaria.itens.all %}
+                <tr>
+                    <td>{{ item.produto.nome }}</td>
+                    <td>{{ item.produto.laboratorio }}</td>
+                    <td>{{ item.lote|default:"-" }}</td>
+                    <td>{{ item.quantidade }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td>{{ avaria.produto.nome|default:"-" }}</td>
+                    <td>{{ avaria.produto.laboratorio|default:"-" }}</td>
+                    <td>{{ avaria.lote|default:"-" }}</td>
+                    <td>{{ avaria.quantidade|default:"0" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Transporte</div>
+        <div class="row">
+            <div class="col">
+                <div class="label">Veículo Principal</div>
+                <div class="value">{{ avaria.veiculo.placa }}</div>
+                <div style="font-size: 8pt;">{{ avaria.veiculo.modelo }}</div>
+
+                <div style="margin-top: 5px; padding-top: 5px; border-top: 1px dotted #ccc;">
+                    <div class="label">Parceiro Logístico</div>
+                    {% if avaria.veiculo.propriedade == 'TERCEIRO' %}
+                    <div style="font-weight: bold; font-size: 8pt;">{{ avaria.veiculo.transportadora_nome|default:"-" }}
+                    </div>
+                    <div style="font-size: 7pt;">{{ avaria.veiculo.transportadora_cnpj|default:"" }}</div>
+                    {% else %}
+                    <div style="font-weight: bold; font-size: 8pt;">TRANSPORTES BIRDAY COMERCIO LTDA</div>
+                    <div style="font-size: 7pt;">00.343.915/0001-08</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col">
+                <div class="label">Carreta</div>
+                <div class="value">{{ avaria.veiculo_carreta.placa|default:"-" }}</div>
+            </div>
+            <div class="col">
+                <div class="label">Motorista</div>
+                <div class="value">{{ avaria.motorista.nome }}</div>
+                <div style="font-size: 8pt;">CPF: {{ avaria.motorista.cpf }}</div>
+            </div>
+        </div>
+        {% if avaria.cd_armazenagem_reversa %}
+        <div class="row" style="margin-top: 5px; border-top: 1px dotted #ccc; padding-top: 5px;">
+            <div class="col">
+                <div class="label">CD de Armazenagem (Logística Reversa)</div>
+                <div class="value">{{ avaria.cd_armazenagem_reversa.codigo }} - {{ avaria.cd_armazenagem_reversa.nome }}
+                </div>
+                <div style="font-size: 8pt;">{{ avaria.cd_armazenagem_reversa.cidade|default:"" }}{% if avaria.cd_armazenagem_reversa.estado %}/{{ avaria.cd_armazenagem_reversa.estado }}{% endif %}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if avaria.status != 'EM_ABERTO' %}
+    <div class="section">
+        <div class="section-title">Conclusão / Devolução</div>
+        <div class="row">
+            <div class="col">
+                <div class="label">Decisão</div>
+                <div class="value">{{ avaria.get_acao_display|default:avaria.get_tipo_finalizacao_display }}</div>
+            </div>
+            <div class="col">
+                <div class="label">Data Finalização</div>
+                <div class="value">{{ avaria.data_finalizacao|date:"d/m/Y H:i"|default:"-" }}</div>
+            </div>
+            <div class="col">
+                <div class="label">NF Devolução</div>
+                <div class="value">{{ avaria.nf_devolucao|default:"-" }}</div>
+            </div>
+        </div>
+        {% if avaria.status == 'FINALIZADA' %}
+        <div style="margin-top: 5px;">
+            <div class="label">Motivo Finalização</div>
+            <div>{{ avaria.get_tipo_finalizacao_display }}</div>
+        </div>
+        {% endif %}
+
+        {% if avaria.motorista_devolucao %}
+        <div class="row" style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 5px;">
+            <div class="col">
+                <div class="label">Veículo Devolução</div>
+                <div class="value">{{ avaria.veiculo_devolucao.placa|default:"-" }}</div>
+                <div style="font-size: 8pt;">{{ avaria.veiculo_devolucao.modelo }}</div>
+            </div>
+            <div class="col">
+                <div class="label">Carreta Devolução</div>
+                <div class="value">{{ avaria.veiculo_devolucao_carreta.placa|default:"-" }}</div>
+            </div>
+            <div class="col">
+                <div class="label">Motorista Devolução</div>
+                <div class="value">{{ avaria.motorista_devolucao.nome|default:"-" }}</div>
+                <div style="font-size: 8pt;">CPF: {{ avaria.motorista_devolucao.cpf }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="section">
+        <div class="section-title">Histórico e Observações</div>
+        <div class="history-box">
+            {{ avaria.observacoes|default:"Sem observações." }}
+        </div>
+    </div>
+
+    {% if show_photos %}
+    <div class="section" style="page-break-before: auto;">
+        <div class="section-title">Evidências (Fotos)</div>
+        <div class="photos-grid">
+            {% for foto in fotos %}
+            <div class="photo-item">
+                <img src="{{ foto.arquivo.url }}" alt="Foto">
+                <div class="photo-meta">
+                    Enviado por: {{ foto.criado_por.username }}<br>
+                    {{ foto.data_upload|date:"d/m/Y H:i" }}
+                </div>
+            </div>
+            {% empty %}
+            <div>Nenhuma foto anexada.</div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 30px; border-top: 1px dashed #000; padding-top: 5px; text-align: center; font-size: 8pt;">
+        Gerado por Sistema Transbirday Avarias em {% now "d/m/Y H:i" %}
+    </div>
+
+</body>
+
+</html>

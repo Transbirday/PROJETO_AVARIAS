@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ page_title }}</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                        <div class="text-danger small">{{ field.errors }}</div>
+                    </div>
+                    {% endfor %}
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ back_url }}" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-success">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // --- VEICULO LOGIC (Logistic Partner) ---
+        const propriedadeSelect = document.querySelector('#id_propriedade');
+        const transpNomeInput = document.querySelector('#id_transportadora_nome');
+        const transpCnpjInput = document.querySelector('#id_transportadora_cnpj');
+
+        if (propriedadeSelect && transpNomeInput && transpCnpjInput) {
+
+            // 1. Toggle Fields visibility
+            function toggleTransportadora() {
+                const isTerceiro = propriedadeSelect.value === 'TERCEIRO';
+                // In generic form, fields are wrapped in div.mb-3
+                const containerNome = transpNomeInput.closest('.mb-3');
+                const containerCnpj = transpCnpjInput.closest('.mb-3');
+
+                if (isTerceiro) {
+                    if (containerNome) containerNome.style.display = 'block';
+                    if (containerCnpj) containerCnpj.style.display = 'block';
+                } else {
+                    if (containerNome) containerNome.style.display = 'none';
+                    if (containerCnpj) containerCnpj.style.display = 'none';
+                }
+            }
+
+            propriedadeSelect.addEventListener('change', toggleTransportadora);
+            toggleTransportadora(); // Run on init
+
+            // 2. Transportadora CNPJ Search
+            // Check if wrapper already exists (re-run safety)
+            if (!transpCnpjInput.parentNode.classList.contains('input-group')) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'input-group has-validation';
+                transpCnpjInput.parentNode.insertBefore(wrapper, transpCnpjInput);
+                wrapper.appendChild(transpCnpjInput);
+
+                const btnSearchTransp = document.createElement('button');
+                btnSearchTransp.className = 'btn btn-outline-primary';
+                btnSearchTransp.type = 'button';
+                btnSearchTransp.innerHTML = '<i class="bi bi-search"></i>';
+                wrapper.appendChild(btnSearchTransp);
+
+                const feedbackTransp = document.createElement('div');
+                feedbackTransp.className = 'mt-1 small';
+                wrapper.parentNode.appendChild(feedbackTransp);
+
+                function searchTranspCNPJ() {
+                    let cnpj = transpCnpjInput.value.replace(/\D/g, '');
+                    if (cnpj.length !== 14) return;
+
+                    transpCnpjInput.classList.remove('is-invalid', 'is-valid');
+                    transpCnpjInput.style.cursor = 'wait';
+                    btnSearchTransp.disabled = true;
+                    btnSearchTransp.innerHTML = '...';
+
+                    fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`)
+                        .then(res => {
+                            if (!res.ok) throw new Error('Erro na busca');
+                            return res.json();
+                        })
+                        .then(data => {
+                            transpNomeInput.value = data.razao_social || data.nome_fantasia || '';
+                            transpCnpjInput.classList.add('is-valid');
+                            feedbackTransp.innerHTML = '<span class="text-success">Encontrado!</span>';
+                        })
+                        .catch(err => {
+                            transpCnpjInput.classList.add('is-invalid');
+                            feedbackTransp.innerHTML = '<span class="text-danger">Não encontrado.</span>';
+                        })
+                        .finally(() => {
+                            transpCnpjInput.style.cursor = 'text';
+                            btnSearchTransp.disabled = false;
+                            btnSearchTransp.innerHTML = '<i class="bi bi-search"></i>';
+                        });
+                }
+
+                transpCnpjInput.addEventListener('blur', searchTranspCNPJ);
+                btnSearchTransp.addEventListener('click', searchTranspCNPJ);
+            }
+        }
+    });
+</script>
+{% endblock %}

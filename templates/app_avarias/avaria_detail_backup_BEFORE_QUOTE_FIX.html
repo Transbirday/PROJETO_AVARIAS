@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Detalhes da Avaria #{{ avaria.id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Avaria #{{ avaria.id }} <small class="text-muted fs-6">Cadastrada em {{ avaria.data_criacao|date:'d/m/Y H:i' }}</small></h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <span
+            class="badge fs-6 me-2 {% if avaria.status == 'EM_ABERTO' %}bg-warning text-dark{% elif avaria.status == 'FINALIZADA' %}bg-success{% else %}bg-info text-white{% endif %}">
+            {{ avaria.get_status_display }}
+        </span>
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="Dias em Aberto">
+                <i class="bi bi-calendar"></i> Aberto: <strong>{{ avaria.dias_em_aberto }}</strong>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="Dias Aguardando Devolução">
+                <i class="bi bi-clock-history"></i> Aguardando: <strong>{{ avaria.dias_aguardando_devolucao }}</strong>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="Dias em Rota">
+                <i class="bi bi-truck"></i> Em Rota: <strong>{{ avaria.dias_em_rota }}</strong>
+            </button>
+        </div>
+
+        <a href="{% url 'avaria_list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- LEFT COLUMN: DETAILS -->
+    <div class="col-lg-8">
+
+        <!-- CARD 1: CARGA E PRODUTO -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light fw-bold">
+                <i class="bi bi-box-seam"></i> Informações da Carga
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-12 border-end">
+                        <h6 class="text-muted text-uppercase small mb-1">Cliente</h6>
+                        <p class="fw-bold mb-3">{{ avaria.cliente.razao_social }} <span class="text-muted small">({{ avaria.cliente.cnpj }})</span></p>
+
+                        <div class="row">
+                            <div class="col-6">
+                                <h6 class="text-muted text-uppercase small mb-1">Nota Fiscal</h6>
+                                <p class="mb-0">{{ avaria.nota_fiscal }}</p>
+                            </div>
+                            <div class="col-6">
+                                <h6 class="text-muted text-uppercase small mb-1">Valor da NF</h6>
+                                <p class="mb-0">R$ {{ avaria.valor_nf|default:'0,00' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h6 class="text-muted text-uppercase mb-3">Itens da Avaria</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Produto</th>
+                                        <th>Laboratório</th>
+                                        <th>Lote</th>
+                                        <th>Quantidade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in avaria.itens.all %}
+                                    <tr>
+                                        <td>{{ item.produto.nome }}</td>
+                                        <td>{{ item.produto.laboratorio }}</td>
+                                        <td>{{ item.lote|default:"-" }}</td>
+                                        <td>{{ item.quantidade }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td>{{ avaria.produto.nome|default:"-" }}</td>
+                                        <td>{{ avaria.produto.laboratorio|default:"-" }}</td>
+                                        <td>{{ avaria.lote|default:"-" }}</td>
+                                        <td>{{ avaria.quantidade|default:"0" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- More sections will be added here -->
+        <p class="text-muted">Template em construção - Seção 1 OK</p>
+
+    </div>
+
+    <!-- RIGHT COLUMN: ACTIONS -->
+    <div class="col-lg-4">
+        <div class="card shadow border-primary position-sticky" style="top: 20px;">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h5 class="mb-0"><i class="bi bi-gear-fill"></i> Fluxo de Gestão</h5>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted">Status: {{ avaria.status }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

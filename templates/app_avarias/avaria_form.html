@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+
+{% block title %}Cadastro de Nova Avaria{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Nova Avaria</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Hidden Fields -->
+                    {{ form.criado_por }}
+                    {{ form.local_atuacao }}
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Data e Hora (Automático)</label>
+                            <input type="text" class="form-control" value="{% now 'd/m/Y H:i' %}" disabled readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Local de Atuação</label>
+                            <input type="text" class="form-control" value="{{ user.local_atuacao|default:'Matrix' }}"
+                                disabled readonly>
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4 mb-3 border-bottom pb-2">Informações da Carga</h5>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.cliente.id_for_label }}" class="form-label">Cliente *</label>
+                            {{ form.cliente }}
+                            {% if form.cliente.errors %}
+                            <div class="text-danger small">{{ form.cliente.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.nota_fiscal.id_for_label }}" class="form-label">Nota Fiscal (NF)
+                                *</label>
+                            {{ form.nota_fiscal }}
+                            {% if form.nota_fiscal.errors %}
+                            <div class="text-danger small">{{ form.nota_fiscal.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.valor_nf.id_for_label }}" class="form-label">Valor da NF</label>
+                            {{ form.valor_nf }}
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4 mb-3 border-bottom pb-2">Transporte</h5>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="{{ form.veiculo.id_for_label }}" class="form-label">Veículo Principal *</label>
+                            {{ form.veiculo }}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.veiculo_carreta.id_for_label }}" class="form-label">Carreta
+                                (Opcional)</label>
+                            {{ form.veiculo_carreta }}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.motorista.id_for_label }}" class="form-label">Motorista *</label>
+                            {{ form.motorista }}
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4 mb-3 border-bottom pb-2">Itens da Avaria (Produtos e Ocorrências)</h5>
+
+                    <div id="items-container">
+                        <!-- Items will be added here -->
+                        <div class="avaria-item card mb-3 bg-light border-0">
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Produto *</label>
+                                        <select name="produto[]" class="form-select" style="width: 100%;" required>
+                                            <option value="">Selecione o produto...</option>
+                                            {% for prod in produtos_list %}
+                                            <option value="{{ prod.id }}">{{ prod }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Lote</label>
+                                        <input type="text" name="lote[]" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Quantidade *</label>
+                                        <input type="number" name="quantidade[]" class="form-control" required min="1"
+                                            value="1">
+                                    </div>
+                                    <div class="col-12 text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-item-btn"
+                                            style="display: none;">
+                                            <i class="bi bi-trash"></i> Remover Item
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden Template for Cloning (Pure HTML, no Select2 classes initialized yet) -->
+                    <div id="item-template-content" style="display: none;">
+                        <div class="avaria-item card mb-3 bg-light border-0">
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Produto *</label>
+                                        <select name="produto[]" class="form-select" style="width: 100%;" required>
+                                            <option value="">Selecione o produto...</option>
+                                            {% for prod in produtos_list %}
+                                            <option value="{{ prod.id }}">{{ prod }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Lote</label>
+                                        <input type="text" name="lote[]" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Quantidade *</label>
+                                        <input type="number" name="quantidade[]" class="form-control" required min="1"
+                                            value="1">
+                                    </div>
+                                    <div class="col-12 text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-item-btn">
+                                            <i class="bi bi-trash"></i> Remover Item
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <button type="button" id="add-item-btn" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Adicionar +1 Item
+                        </button>
+                    </div>
+
+                    <h5 class="mt-4 mb-3 border-bottom pb-2">Evidências e Observações Gerais</h5>
+
+                    <div class="mb-3">
+                        <label for="{{ form.observacoes.id_for_label }}" class="form-label">Observações Gerais
+                            (Opcional)</label>
+                        {{ form.observacoes }}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="fotos" class="form-label">Fotos (Aplicadas a todos os itens)</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" name="fotos" id="fotos" multiple accept="image/*">
+                            <button class="btn btn-outline-secondary" type="button" title="Usar Câmera"
+                                onclick="openWebcam('fotos')">
+                                <i class="bi bi-camera-fill"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Você pode selecionar vários arquivos.</div>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-end">
+                        <a href="{% url 'avaria_list' %}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-save"></i> Registrar Avaria
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function () {
+        // Init View (First Item)
+        // initSelect2($('.avaria-select2'));
+
+        // Function to init Select2
+        function initSelect2(element) {
+            element.select2({
+                width: '100%'
+            });
+        }
+
+        // Add Item via Template
+        $('#add-item-btn').click(function () {
+            // Get HTML from hidden template
+            var templateHtml = $('#item-template-content').html();
+            var newItem = $(templateHtml);
+
+            // Append to container
+            $('#items-container').append(newItem);
+
+            // Initialize Select2 on the new dropdown
+            // Note: In template we use class 'avaria-select2-template' to avoid initial auto-init if any
+            // initSelect2(newItem.find('.avaria-select2-template'));
+        });
+
+        // Remove Item
+        $(document).on('click', '.remove-item-btn', function () {
+            $(this).closest('.avaria-item').remove();
+        });
+
+        // Init Global Select2 (for header fields)
+        $('.select2').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Selecione...',
+            allowClear: true
+        });
+    });
+</script>
+{% endblock %}

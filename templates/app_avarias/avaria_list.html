@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{% if current_filter == 'EM_ABERTO' %}Avarias em Aberto
+{% elif current_filter == 'AGUARDANDO_DEVOLUCAO' %}Aguardando Devolução
+{% elif current_filter == 'EM_ROTA_DEVOLUCAO' %}Em Rota de Devolução
+{% else %}Todas as Avarias{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        {% if current_filter == 'EM_ABERTO' %}Avarias em Aberto
+        {% elif current_filter == 'AGUARDANDO_DEVOLUCAO' %}Aguardando Devolução
+        {% elif current_filter == 'EM_ROTA_DEVOLUCAO' %}Em Rota de Devolução
+        {% else %}Lista de Avarias{% endif %}
+    </h1>
+
+    {% if current_filter == 'EM_ABERTO' %}
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{% url 'avaria_create' %}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-lg"></i> Nova Avaria
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- CD Dashboard for AGUARDANDO_DEVOLUCAO -->
+{% if current_filter == 'AGUARDANDO_DEVOLUCAO' and dashboard_cds %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning bg-opacity-10 text-dark fw-bold">
+                <i class="bi bi-building-check"></i> Placar de Armazenagem por CD
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Selecione um Centro de Distribuição para filtrar as avarias:</p>
+                <div class="d-flex flex-wrap gap-4">
+                    <a href="?status=AGUARDANDO_DEVOLUCAO"
+                        class="btn {% if not selected_cd_id %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                        Todos os CDs
+                    </a>
+                    {% for cd in dashboard_cds %}
+                    <a href="?status=AGUARDANDO_DEVOLUCAO&cd_id={{ cd.cd_armazenagem_reversa__id }}"
+                        class="btn {% if selected_cd_id == cd.cd_armazenagem_reversa__id %}btn-warning text-dark fw-bold{% else %}btn-outline-warning text-dark{% endif %} position-relative"
+                        style="min-width: 120px;">
+                        {{ cd.cd_armazenagem_reversa__nome }}
+                        <span
+                            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light shadow-sm">
+                            {{ cd.total }}
+                            <span class="visually-hidden">avarias</span>
+                        </span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Table -->
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Status</th>
+                <th>Cliente</th>
+                <th>Produto</th>
+                <th>Data</th>
+                <th>Dias</th>
+                <th>NF</th>
+                {% if current_filter == 'EM_ROTA_DEVOLUCAO' or current_filter == 'AGUARDANDO_DEVOLUCAO' %}
+                <th>NFD</th>
+                {% endif %}
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for avaria in avarias %}
+            <tr onclick="window.location='{% url 'avaria_detail' avaria.pk %}';" style="cursor: pointer;">
+                <td>{{ avaria.id }}</td>
+                <td>
+                    <span class="badge 
+                        {% if avaria.status == 'EM_ABERTO' %}bg-warning
+                        {% elif avaria.status == 'FINALIZADA' %}bg-success
+                        {% elif avaria.status == 'AGUARDANDO_DEVOLUCAO' %}bg-secondary
+                        {% elif avaria.status == 'EM_ROTA_DEVOLUCAO' %}bg-info
+                        {% else %}bg-light text-dark{% endif %}">
+                        {{ avaria.get_status_display }}
+                    </span>
+                </td>
+                <td>{{ avaria.cliente.razao_social }}</td>
+                <td>
+                    {% with count=avaria.itens.count items=avaria.itens.all %}
+                    <div data-bs-toggle="tooltip" data-bs-html="true"
+                        title="{% for item in items %}{{ item.produto.nome }} (Qtd: {{ item.quantidade }})<br>{% endfor %}">
+                        {% if count > 1 %}
+                        Diversos ({{ count }} itens)
+                        {% elif count == 1 %}
+                        {{ items.first.produto.nome }} - {{ items.first.produto.laboratorio }}
+                        {% else %}
+                        {{ avaria.produto.nome|default:"-" }}
+                        {% endif %}
+                    </div>
+                    {% endwith %}
+                </td>
+                <td>{{ avaria.data_criacao|date:"d/m/Y H:i" }}</td>
+                <td>
+                    {% if avaria.status == 'EM_ABERTO' %}{{ avaria.dias_em_aberto }}
+                    {% elif avaria.status == 'AGUARDANDO_DEVOLUCAO' %}{{ avaria.dias_aguardando_devolucao }}
+                    {% elif avaria.status == 'EM_ROTA_DEVOLUCAO' %}{{ avaria.dias_em_rota }}
+                    {% else %}-{% endif %}
+                </td>
+                <td>
+                    {{ avaria.nota_fiscal }}
+                </td>
+                {% if current_filter == 'EM_ROTA_DEVOLUCAO' or current_filter == 'AGUARDANDO_DEVOLUCAO' %}
+                <td>
+                    {{ avaria.nf_devolucao|default:"-" }}
+                </td>
+                {% endif %}
+                <td>
+                    <a href="{% url 'avaria_detail' avaria.pk %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                    Nenhum registro encontrado nesta categoria.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize Bootstrap Tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+</script>
+{% endblock %}

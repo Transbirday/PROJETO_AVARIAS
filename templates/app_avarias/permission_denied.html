@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Acesso Negado{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 text-center">
+        <div class="card border-danger shadow">
+            <div class="card-body p-5">
+                <i class="bi bi-shield-lock-fill text-danger" style="font-size: 5rem;"></i>
+                <h2 class="mt-4 text-danger">Acesso Negado</h2>
+                <p class="lead text-muted">Você não tem permissão para acessar esta página.</p>
+                <hr>
+                <p>Se você acredita que isso é um erro, entre em contato com o administrador do sistema.</p>
+                <div class="mt-4">
+                    <a href="/" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar (Dashboard se permitido)
+                    </a>
+                    {% if not user.is_authenticated %}
+                    <a href="{% url 'login' %}" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-in-right"></i> Fazer Login
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

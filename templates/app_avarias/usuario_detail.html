@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhes do Usuário{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Detalhes: {{ object.first_name|default:object.username }}</h1>
+    <div>
+        <a href="{% url 'usuario_update' object.pk %}" class="btn btn-primary">
+            <i class="bi bi-pencil"></i> Editar
+        </a>
+        <a href="{% url 'usuario_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <strong>Status:</strong>
+                {% if object.is_active %}
+                <span class="badge bg-success">Ativo</span>
+                {% else %}
+                <span class="badge bg-danger">Inativo</span>
+                {% endif %}
+            </div>
+            <div class="col-md-6">
+                <strong>Username (Login):</strong> {{ object.username }}
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <strong>Nível de Acesso:</strong>
+                <span class="badge bg-info text-dark">{{ object.get_nivel_acesso_display }}</span>
+            </div>
+            <div class="col-md-6">
+                <strong>Local de Atuação:</strong> {{ object.local_atuacao|default:"-" }}
+            </div>
+        </div>
+
+        <hr>
+
+        <h5 class="mt-4">Contato</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <strong>Telefone:</strong> {{ object.telefone|default:"-" }}
+            </div>
+            <div class="col-md-6">
+                <strong>Nome Completo:</strong> {{ object.first_name }} {{ object.last_name }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

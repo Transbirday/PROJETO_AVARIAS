@@ -1,0 +1,34 @@
+<!-- Modal Transferencia CD -->
+<div class="modal fade" id="transferCDModal" tabindex="-1" aria-labelledby="transferCDModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="transferCDModalLabel">Transferência de CD</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">
+                        Selecione o novo CD de Armazenagem (Logística Reversa) para transferir esta avaria.
+                        Esta ação será registrada no histórico.
+                    </p>
+                    <div class="mb-3">
+                        <label for="{{ transferencia_cd_form.cd_armazenagem_reversa.id_for_label }}"
+                            class="form-label">Novo CD de Destino</label>
+                        {{ transferencia_cd_form.cd_armazenagem_reversa }}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ transferencia_cd_form.observacoes.id_for_label }}" class="form-label">Observações
+                            Adicionais</label>
+                        {{ transferencia_cd_form.observacoes }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" name="transferir_cd" class="btn btn-warning">Confirmar Transferência</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

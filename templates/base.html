@@ -1,0 +1,455 @@
+{% load static %}{% load pwa %}{% load permission_tags %}
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gestão de Avarias{% endblock %} | Transbirday</title>
+
+    <!-- PWA -->
+    {% progressive_web_app_meta %}
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+    <!-- Custom CSS -->
+    {% block extra_css %}{% endblock %}
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background-color: #212529;
+            /* Dark Sidebar */
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        .main-content {
+            padding: 20px;
+        }
+
+        /* Sidebar subgroups indentation */
+        .nav-subgroup {
+            margin-left: 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 767.98px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                z-index: 1050;
+                /* Above regular content */
+                height: 100%;
+                width: 250px;
+                padding-top: 50px;
+                /* Space for the closer/header */
+            }
+
+            .navbar-toggler:focus {
+                box-shadow: none;
+                outline: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    {% if user.is_authenticated %}
+    <!-- Mobile Header -->
+    <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow d-md-none">
+        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6 text-white" href="{% url 'dashboard' %}">TRANSBIRDAY</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu"
+            aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </header>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 d-md-block sidebar collapse" id="sidebarMenu">
+                <div class="position-sticky pt-3">
+                    <h5 class="text-white text-center mb-4">TRANSBIRDAY AVARIAS</h5>
+                    <ul class="nav flex-column">
+                        <!-- PAINEL DE CONTROLE -->
+                        {% if request.user|has_group:"Gestor" %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                                href="{% url 'dashboard' %}">
+                                <i class="bi bi-speedometer2 me-2"></i> Painel de Controle
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        <!-- FLUXO DE AVARIAS -->
+                        <h6
+                            class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-white-50 text-uppercase">
+                            <span>Fluxo de Avarias</span>
+                        </h6>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'avaria_create' %}active{% endif %}"
+                                href="{% url 'avaria_create' %}">
+                                <i class="bi bi-plus-circle me-2"></i> Nova Avaria
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'status=EM_ABERTO' in request.get_full_path %}active{% endif %}"
+                                href="{% url 'avaria_list' %}?status=EM_ABERTO">
+                                <i class="bi bi-exclamation-triangle me-2"></i> Em Aberto
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'status=AGUARDANDO_DEVOLUCAO' in request.get_full_path %}active{% endif %}"
+                                href="{% url 'avaria_list' %}?status=AGUARDANDO_DEVOLUCAO">
+                                <i class="bi bi-hourglass-split me-2"></i> Aguardando Devolução
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'status=EM_ROTA_DEVOLUCAO' in request.get_full_path %}active{% endif %}"
+                                href="{% url 'avaria_list' %}?status=EM_ROTA_DEVOLUCAO">
+                                <i class="bi bi-truck me-2"></i> Rota de Devolução
+                            </a>
+                        </li>
+                        {% if request.user|has_group:"Gestor" %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'avaria_definicao_prejuizo_list' %}active{% endif %}"
+                                href="{% url 'avaria_definicao_prejuizo_list' %}">
+                                <i class="bi bi-cash-coin me-2"></i> Definição de Prejuízo
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'avaria_search' %}active{% endif %}"
+                                href="{% url 'avaria_search' %}">
+                                <i class="bi bi-search me-2"></i> Pesquisa Global
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        <!-- CADASTROS -->
+                        <h6
+                            class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-white-50 text-uppercase">
+                            <span>Cadastros</span>
+                        </h6>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'condutor_list' %}active{% endif %}"
+                                href="{% url 'condutor_list' %}">
+                                <i class="bi bi-people me-2"></i> Condutores
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'veiculo_list' %}active{% endif %}"
+                                href="{% url 'veiculo_list' %}">
+                                <i class="bi bi-truck-front me-2"></i> Veículos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'produto_list' %}active{% endif %}"
+                                href="{% url 'produto_list' %}">
+                                <i class="bi bi-box-seam me-2"></i> Produtos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'clientes' in request.path %}active{% endif %}"
+                                href="{% url 'cliente_list' %}">
+                                <i class="bi bi-buildings me-2"></i> Clientes
+                            </a>
+                        </li>
+
+                        <!-- ADMIN -->
+                        {% if user.is_staff %}
+                        <h6
+                            class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-white-50 text-uppercase">
+                            <span>Sistema</span>
+                        </h6>
+                        {% if user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'usuarios' in request.path %}active{% endif %}"
+                                href="{% url 'usuario_list' %}">
+                                <i class="bi bi-person-badge me-2"></i> Usuários
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'admin:index' %}" target="_blank">
+                                <i class="bi bi-shield-lock me-2"></i> Admin Django
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    <hr class="text-white">
+                    <div class="px-3">
+                        <span class="text-white small">Usuário: {{ user.username }}</span><br>
+                        <form action="{% url 'logout' %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit"
+                                class="btn btn-link text-danger small text-decoration-none p-0 border-0">Sair</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+    <!-- Full Layout for Non-Auth (Login) -->
+    {% block content_no_auth %}{% endblock %}
+    {% endif %}
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Global Select2 Initialization
+        $(document).ready(function () {
+            $('.select2').select2({
+                theme: 'bootstrap-5',
+                width: '100%'
+            });
+        });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+    <script>
+        // Global Select2 Initialization & Masks
+        $(document).ready(function () {
+            $('.select2').select2({
+                theme: 'bootstrap-5',
+                width: '100%'
+            });
+
+            // Mascaras
+            $('.cpf-mask').mask('000.000.000-00');
+            $('.phone-mask').mask('(00) 00000-0000');
+            $('.cnpj-mask').mask('00.000.000/0000-00');
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+
+    <!-- Global Camera Modal -->
+    <div class="modal fade" id="cameraModal" tabindex="-1" aria-labelledby="cameraModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cameraModalLabel"><i class="bi bi-camera-fill"></i> Tirar Foto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="position-relative bg-dark rounded d-flex justify-content-center align-items-center"
+                        style="min-height: 400px;">
+                        <video id="cameraVideo" autoplay playsinline
+                            style="max-width: 100%; max-height: 500px; display: none;"></video>
+                        <canvas id="cameraCanvas" style="display: none; max-width: 100%; max-height: 500px;"></canvas>
+                        <div id="cameraLoading" class="text-white">
+                            <div class="spinner-border mb-2" role="status"></div>
+                            <div>Iniciando câmera...</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <div>
+                        <span class="badge bg-secondary" id="photoCounter">0 fotos capturadas</span>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-secondary" id="btnRetake" style="display: none;">
+                            <i class="bi bi-arrow-counterclockwise"></i> Tentar Novamente
+                        </button>
+                        <button type="button" class="btn btn-primary btn-lg" id="btnCapture">
+                            <i class="bi bi-camera"></i> Capturar
+                        </button>
+                        <!-- New Multi-Photo Buttons -->
+                        <button type="button" class="btn btn-info text-white" id="btnAddMore" style="display: none;">
+                            <i class="bi bi-plus-circle"></i> Salvar & +1
+                        </button>
+                        <button type="button" class="btn btn-success" id="btnConfirm" style="display: none;">
+                            <i class="bi bi-check-lg"></i> Finalizar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let videoStream = null;
+        let targetInputId = null;
+        let currentDataTransfer = new DataTransfer(); // Store files session-wise
+
+        const cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
+        const videoElement = document.getElementById('cameraVideo');
+        const canvasElement = document.getElementById('cameraCanvas');
+        const loadingElement = document.getElementById('cameraLoading');
+        const photoCounter = document.getElementById('photoCounter');
+
+        const btnCapture = document.getElementById('btnCapture');
+        const btnRetake = document.getElementById('btnRetake');
+        const btnAddMore = document.getElementById('btnAddMore');
+        const btnConfirm = document.getElementById('btnConfirm');
+
+        // Function called by the buttons in templates
+        window.openWebcam = function (inputId) {
+            targetInputId = inputId;
+            currentDataTransfer = new DataTransfer(); // Reset for new session
+
+            // Try to preserve existing files if input has them?
+            // Usually, triggering a new file selection (even natively) clears old ones unless handled carefully.
+            // Let's assume we start fresh or append. 
+            // Better UX: Read existing files from input into DataTransfer so we don't lose them.
+            let input = document.getElementById(targetInputId) || document.querySelector(targetInputId);
+            if (input && input.files) {
+                for (let i = 0; i < input.files.length; i++) {
+                    currentDataTransfer.items.add(input.files[i]);
+                }
+            }
+            updateCounter();
+
+            resetModal();
+            cameraModal.show();
+            startCamera();
+        };
+
+        // Modal closed handler to stop camera
+        document.getElementById('cameraModal').addEventListener('hidden.bs.modal', function () {
+            stopCamera();
+        });
+
+        function startCamera() {
+            loadingElement.style.display = 'block';
+            videoElement.style.display = 'none';
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(function (stream) {
+                    videoStream = stream;
+                    videoElement.srcObject = stream;
+                    videoElement.onloadedmetadata = function (e) {
+                        loadingElement.style.display = 'none';
+                        videoElement.style.display = 'block';
+                        videoElement.play();
+                    };
+                })
+                .catch(function (err) {
+                    console.log("An error occurred: " + err);
+                    loadingElement.innerHTML = '<i class="bi bi-exclamation-triangle text-danger fs-1"></i><br>Erro ao acessar a câmera.<br>Verifique as permissões.';
+                });
+        }
+
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+        }
+
+        function resetModal() {
+            canvasElement.style.display = 'none';
+            videoElement.style.display = 'block';
+
+            btnCapture.style.display = 'inline-block';
+            btnRetake.style.display = 'none';
+            btnAddMore.style.display = 'none';
+            btnConfirm.style.display = 'none';
+
+            if (!videoStream) {
+                loadingElement.style.display = 'block';
+            }
+        }
+
+        function updateCounter() {
+            photoCounter.textContent = currentDataTransfer.files.length + " foto(s) pronta(s)";
+        }
+
+        function savePhotoToTransfer(callback) {
+            canvasElement.toBlob(function (blob) {
+                const file = new File([blob], "cam_" + new Date().getTime() + ".png", { type: "image/png" });
+                currentDataTransfer.items.add(file);
+                updateCounter();
+
+                // Update Imput immediately? Yes, why not.
+                let input = document.getElementById(targetInputId) || document.querySelector(targetInputId);
+                if (input) {
+                    input.files = currentDataTransfer.files;
+                    // Trigger change event just to be safe (e.g. valid styling)
+                    // But maybe only trigger on finish? Let's trigger now so it feels responsive if there used 'change' listeners.
+                }
+
+                if (callback) callback();
+            });
+        }
+
+        btnCapture.addEventListener('click', function () {
+            // Draw
+            canvasElement.width = videoElement.videoWidth;
+            canvasElement.height = videoElement.videoHeight;
+            canvasElement.getContext('2d').drawImage(videoElement, 0, 0);
+
+            // Switch view
+            videoElement.style.display = 'none';
+            canvasElement.style.display = 'block';
+
+            btnCapture.style.display = 'none';
+
+            // Show Options
+            btnRetake.style.display = 'inline-block';
+            btnAddMore.style.display = 'inline-block';
+            btnConfirm.style.display = 'inline-block';
+        });
+
+        btnRetake.addEventListener('click', function () {
+            resetModal();
+        });
+
+        btnAddMore.addEventListener('click', function () {
+            savePhotoToTransfer(function () {
+                // Flash success or just reset
+                resetModal(); // Back to camera
+            });
+        });
+
+        btnConfirm.addEventListener('click', function () {
+            savePhotoToTransfer(function () {
+                let input = document.getElementById(targetInputId) || document.querySelector(targetInputId);
+                if (input) {
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                cameraModal.hide();
+            });
+        });
+    </script>
+
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Avarias - Pesquisa Global</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            @page {
+                size: landscape;
+                margin: 1cm;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .table-striped tbody tr:nth-of-type(odd) {
+                background-color: rgba(0, 0, 0, .05) !important;
+            }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            background: white;
+            padding: 20px;
+        }
+
+        .header {
+            border-bottom: 2px solid #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9pt;
+        }
+
+        .table th {
+            background-color: #f8f9fa !important;
+            border: 1px solid #dee2e6;
+            padding: 6px;
+            text-align: left;
+            text-transform: uppercase;
+            font-size: 8pt;
+        }
+
+        .table td {
+            border: 1px solid #dee2e6;
+            padding: 6px;
+            vertical-align: top;
+        }
+
+        .badge {
+            font-size: 7pt;
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 8pt;
+            color: #666;
+            text-align: right;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+
+        .item-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            font-size: 8pt;
+        }
+
+        .item-list li {
+            margin-bottom: 2px;
+            border-bottom: 1px dashed #eee;
+        }
+
+        .item-list li:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+
+<body onload="{% if request.GET.autoprint %}window.print(){% endif %}">
+
+    <div class="header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h4 mb-1">RELATÓRIO DE AVARIAS</h1>
+            <p class="text-muted mb-0">Pesquisa Global Filtrada</p>
+        </div>
+        <div class="text-end">
+            <p class="mb-0"><strong>Emissão:</strong> {{ now|date:"d/m/Y H:i" }}</p>
+            <p class="mb-0"><strong>Registros:</strong> {{ avarias.count }}</p>
+        </div>
+    </div>
+
+    <div class="no-print mb-3">
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="bi bi-printer"></i> Imprimir / Salvar PDF
+        </button>
+        <button onclick="window.close()" class="btn btn-outline-secondary">
+            Fechar
+        </button>
+    </div>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th style="width: 50px;">ID</th>
+                <th style="width: 80px;">Status</th>
+                <th style="width: 80px;">Data</th>
+                <th>Cliente</th>
+                <th style="width: 80px;">NF</th>
+                <th style="width: 80px;">NFD</th>
+                <th>Itens / Produtos</th>
+                <th style="width: 100px;">Responsab.</th>
+                <th style="width: 100px;">Local</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for avaria in avarias %}
+            <tr>
+                <td><strong>#{{ avaria.id }}</strong></td>
+                <td>
+                    <span class="badge text-dark">
+                        {{ avaria.get_status_display }}
+                    </span>
+                </td>
+                <td>{{ avaria.data_criacao|date:"d/m/Y" }}</td>
+                <td>
+                    {{ avaria.cliente.razao_social }}<br>
+                    <small class="text-muted">{{ avaria.cliente.cnpj }}</small>
+                </td>
+                <td>{{ avaria.nota_fiscal }}</td>
+                <td>{{ avaria.nf_devolucao|default:"-" }}</td>
+                <td>
+                    <ul class="item-list">
+                        {% for item in avaria.itens.all %}
+                        <li>{{ item.produto.nome }} ({{ item.quantidade }} un)</li>
+                        {% empty %}
+                        <li class="text-muted">Sem itens</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td>
+                    {{ avaria.get_responsavel_prejuizo_display|default:"-" }}
+                </td>
+                <td>{{ avaria.local_atuacao|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="text-center py-4">Nenhum registro encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Gerado por {{ user.get_full_name|default:user.username }} em {{ now|date:"d/m/Y H:i" }} | Sistema de Gestão de
+        Avarias
+    </div>
+
+</body>
+
+</html>

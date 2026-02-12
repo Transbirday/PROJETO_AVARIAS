@@ -1,0 +1,591 @@
+{% extends 'base.html' %}
+{% block title %}Detalhes da Avaria #{{ avaria.id }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Avaria #{{ avaria.id }} <small class="text-muted fs-6">Cadastrada em {{
+            avaria.data_criacao|date:"d/m/Y H:i" }}</small></h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <span
+            class="badge fs-6 me-2 {% if avaria.status == 'EM_ABERTO' %}bg-warning text-dark{% elif avaria.status == 'FINALIZADA' %}bg-success{% else %}bg-info text-white{% endif %}">
+            {{ avaria.get_status_display }}
+        </span>
+        <!-- COUNTERS DISPLAY -->
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="Dias em Aberto">
+                <i class="bi bi-calendar"></i> Aberto: <strong>{{ avaria.dias_em_aberto }}</strong>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="Dias Aguardando Devolução">
+                <i class="bi bi-clock-history"></i> Aguardando: <strong>{{ avaria.dias_aguardando_devolucao }}</strong>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="Dias em Rota">
+                <i class="bi bi-truck"></i> Em Rota: <strong>{{ avaria.dias_em_rota }}</strong>
+            </button>
+        </div>
+
+        <a href="{% url 'avaria_list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- LEFT COLUMN: DETAILS -->
+    <div class="col-lg-8">
+
+        <!-- CARD 1: CARGA E PRODUTO -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light fw-bold">
+                <i class="bi bi-box-seam"></i> Informações da Carga
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-12 border-end">
+                        <h6 class="text-muted text-uppercase small mb-1">Cliente</h6>
+                        <p class="fw-bold mb-3">{{ avaria.cliente.razao_social }} <span class="text-muted small">({{
+                                avaria.cliente.cnpj }})</span></p>
+
+                        <div class="row">
+                            <div class="col-6">
+                                <h6 class="text-muted text-uppercase small mb-1">Nota Fiscal</h6>
+                                <p class="mb-0">{{ avaria.nota_fiscal }}</p>
+                            </div>
+                            <div class="col-6">
+                                <h6 class="text-muted text-uppercase small mb-1">Valor da NF</h6>
+                                <p class="mb-0">R$ {{ avaria.valor_nf|default:"0,00" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <h6 class="text-muted text-uppercase mb-3">Itens da Avaria</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Produto</th>
+                                        <th>Laboratório</th>
+                                        <th>Lote</th>
+                                        <th>Quantidade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in avaria.itens.all %}
+                                    <tr>
+                                        <td>{{ item.produto.nome }}</td>
+                                        <td>{{ item.produto.laboratorio }}</td>
+                                        <td>{{ item.lote|default:"-" }}</td>
+                                        <td>{{ item.quantidade }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <!-- Fallback for legacy items or main info -->
+                                    <tr>
+                                        <td>{{ avaria.produto.nome|default:"-" }}</td>
+                                        <td>{{ avaria.produto.laboratorio|default:"-" }}</td>
+                                        <td>{{ avaria.lote|default:"-" }}</td>
+                                        <td>{{ avaria.quantidade|default:"0" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CARD 2: TRANSPORTE -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light fw-bold">
+                <i class="bi bi-truck"></i> Transporte & Logística
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <h6 class="text-muted text-uppercase small mb-1">Veículo Principal</h6>
+                        <p class="mb-0 fw-bold">{{ avaria.veiculo.placa }} <span
+                                class="badge bg-light text-dark border">{{ avaria.veiculo.get_propriedade_display
+                                }}</span></p>
+                        <small class="text-muted">{{ avaria.veiculo.modelo|default:"" }}</small>
+
+                        <div class="mt-2 pt-2 border-top">
+                            <h6 class="text-muted text-uppercase small mb-0" style="font-size: 0.7rem;">Parceiro
+                                Logístico</h6>
+                            {% if avaria.veiculo.propriedade == 'TERCEIRO' %}
+                            <div class="fw-bold small">{{ avaria.veiculo.transportadora_nome|default:"-" }}</div>
+                            <div class="text-muted small" style="font-size: 0.7rem;">{{
+                                avaria.veiculo.transportadora_cnpj|default:"" }}</div>
+                            {% else %}
+                            <div class="fw-bold small">TRANSPORTES BIRDAY COMERCIO LTDA</div>
+                            <div class="text-muted small" style="font-size: 0.7rem;">00.343.915/0001-08</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-muted text-uppercase small mb-1">Carreta (Reboque)</h6>
+                        {% if avaria.veiculo_carreta %}
+                        <p class="mb-0 fw-bold">{{ avaria.veiculo_carreta.placa }}</p>
+                        <small class="text-muted">{{ avaria.veiculo_carreta.get_propriedade_display }}</small>
+                        {% else %}
+                        <p class="text-muted">-</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-muted text-uppercase small mb-1">Motorista</h6>
+                        <p class="mb-0 fw-bold">{{ avaria.motorista.nome }}</p>
+                        <small class="text-muted">CPF: {{ avaria.motorista.cpf }}</small>
+                    </div>
+                    <div class="col-12 mt-3 pt-3 border-top">
+                        <h6 class="text-muted text-uppercase small mb-1">Local de Atuação / Registro</h6>
+                        <p class="mb-0">{{ avaria.local_atuacao|default:"Não informado" }} - Criado por: {{
+                            avaria.criado_por.first_name|default:avaria.criado_por.username }}</p>
+                    </div>
+                    {% if avaria.cd_armazenagem_reversa %}
+                    <div class="col-12 mt-3 pt-3 border-top bg-warning bg-opacity-10">
+                        <h6 class="text-muted text-uppercase small mb-1"><i class="bi bi-building"></i> CD de
+                            Armazenagem (Logística Reversa)</h6>
+                        <p class="mb-0 fw-bold">{{ avaria.cd_armazenagem_reversa.codigo }} - {{
+                            avaria.cd_armazenagem_reversa.nome }}</p>
+                        <small class="text-muted">{{ avaria.cd_armazenagem_reversa.cidade|default:"" }}{% if
+                            avaria.cd_armazenagem_reversa.estado %}/{{ avaria.cd_armazenagem_reversa.estado }}{% endif
+                            %}</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW CARD: LOGÍSTICA REVERSA DETAILS -->
+        {% if avaria.motorista_devolucao %}
+        <div class="card shadow-sm mb-4 border-warning">
+            <div class="card-header bg-warning bg-opacity-10 fw-bold border-warning text-warning-emphasis">
+                <i class="bi bi-arrow-return-left"></i> Logística Reversa (Devolução)
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <h6 class="text-muted text-uppercase small mb-1">NFD (Nota Fiscal)</h6>
+                        <p class="mb-0 fw-bold">{{ avaria.nf_devolucao|default:"-" }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted text-uppercase small mb-1">Veículo Retorno</h6>
+                        <p class="mb-0 fw-bold">{{ avaria.veiculo_devolucao.placa|default:"-" }}</p>
+                        <small class="text-muted">{{ avaria.veiculo_devolucao.modelo|default:"" }}</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted text-uppercase small mb-1">Carreta Retorno</h6>
+                        <p class="mb-0 fw-bold">{{ avaria.veiculo_devolucao_carreta.placa|default:"-" }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted text-uppercase small mb-1">Motorista Retorno</h6>
+                        <p class="mb-0 fw-bold">{{ avaria.motorista_devolucao.nome|default:"-" }}</p>
+                        <small class="text-muted">{{ avaria.motorista_devolucao.cpf }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- CARD 3: OBSERVAÇÕES E HISTÓRICO -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-chat-left-text"></i> Histórico & Observações</span>
+            </div>
+            <div class="card-body bg-light bg-opacity-10">
+                <div class="mb-3 p-3 bg-white border rounded"
+                    style="white-space: pre-wrap; font-family: monospace; max-height: 300px; overflow-y: auto;">{{
+                    avaria.observacoes|default:"Nenhuma observação registrada." }}</div>
+
+                {% if avaria.status != 'FINALIZADA' %}
+                <form method="post">
+                    {% csrf_token %}
+                    <label class="form-label small text-uppercase">Adicionar Nova Nota</label>
+                    <div class="input-group">
+                        {{ obs_form.texto }}
+                        <button class="btn btn-primary" type="submit" name="add_observacao">Adicionar</button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- CARD 4: GALERIA DE FOTOS -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-images"></i> Evidências (Fotos)</span>
+            </div>
+            <div class="card-body">
+
+                <!-- Upload Form -->
+                {% if avaria.status != 'FINALIZADA' %}
+                <div class="mb-4 p-3 bg-light border rounded">
+                    <form method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+                        {% csrf_token %}
+                        <div class="col-8">
+                            <label class="form-label small text-uppercase fw-bold">Adicionar Novas Fotos</label>
+                            <div class="input-group">
+                                {{ photo_form.arquivo }}
+                                <button class="btn btn-outline-secondary" type="button" title="Usar Câmera"
+                                    onclick="openWebcam('input[type=file][name=arquivo]')">
+                                    <i class="bi bi-camera-fill"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <button type="submit" name="upload_foto" class="btn btn-primary w-100">
+                                <i class="bi bi-cloud-upload"></i> Enviar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                {% endif %}
+
+                {% regroup fotos_ordenadas by criado_por as fotos_por_usuario %}
+
+                {% for group in fotos_por_usuario %}
+                <h6 class="border-bottom pb-2 mb-3 mt-4 text-primary">
+                    <i class="bi bi-person-fill"></i> Enviado por: {% if group.grouper %}{{
+                    group.grouper.first_name|default:group.grouper.username }} ({{ group.grouper.username }}){% else
+                    %}Sistema / Desconhecido{% endif %}
+                </h6>
+                <div class="row g-2">
+                    {% for foto in group.list %}
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <div class="card h-100">
+                            <a href="{{ foto.arquivo.url }}" target="_blank">
+                                <img src="{{ foto.arquivo.url }}" class="card-img-top"
+                                    style="height: 150px; object-fit: cover;" alt="Foto Avaria">
+                            </a>
+                            <div class="card-footer p-1 text-center">
+                                <small class="text-muted" style="font-size: 0.75rem;">{{ foto.data_upload|date:"d/m/Y
+                                    H:i" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% empty %}
+                <div class="col-12 py-4 text-center text-muted">
+                    <i class="bi bi-camera-fill fs-3 d-block mb-2"></i>
+                    Nenhuma foto anexada a este registro.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: ACTIONS -->
+    <div class="col-lg-4">
+        <!-- Status Management Actions -->
+        <div class="card shadow border-primary position-sticky" style="top: 20px;">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h5 class="mb-0"><i class="bi bi-gear-fill"></i> Fluxo de Gestão</h5>
+            </div>
+            <div class="card-body p-4">
+
+                {% if avaria.status == 'EM_ABERTO' %}
+                <h6 class="card-subtitle mb-3 text-muted border-bottom pb-2">Tomada de Decisão</h6>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        {% for radio in decisao_form.acao %}
+                        <div class="form-check mb-2 p-3 border rounded hover-shadow">
+                            {{ radio }}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- NF RETENTION CHECK -->
+                    <div class="mb-3 p-3 bg-light border rounded">
+                        <label class="form-label small text-uppercase fw-bold d-block">{{
+                            decisao_form.nf_retida_conferencia.label }}</label>
+                        {% for radio in decisao_form.nf_retida_conferencia %}
+                        <div class="form-check form-check-inline">
+                            {{ radio }}
+                        </div>
+                        {% endfor %}
+
+                        <div class="mt-2" id="div_horas_retencao" style="display: none;">
+                            <label class="form-label small text-uppercase fw-bold">{{ decisao_form.horas_retencao.label
+                                }}</label>
+                            {{ decisao_form.horas_retencao }}
+                        </div>
+                    </div>
+
+                    <!-- NFD AND CD FIELDS (shown when DEVOLVER is selected) -->
+                    <div class="mb-3 p-3 border rounded" id="div_devolucao_fields" style="display: none;">
+                        <h6 class="text-warning mb-3"><i class="bi bi-arrow-return-left"></i> Dados da Devolução</h6>
+                        <div class="mb-3">
+                            <label class="form-label small text-uppercase fw-bold">{{ decisao_form.nf_devolucao.label
+                                }}</label>
+                            {{ decisao_form.nf_devolucao }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-uppercase fw-bold d-block">{{
+                                decisao_form.cd_armazenagem_reversa.label }}</label>
+                            {{ decisao_form.cd_armazenagem_reversa }}
+                            <small class="text-muted d-block mt-1">Selecione o CD onde ficará armazenado. Para adicionar
+                                novo CD, acesse o painel administrativo.</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small text-uppercase fw-bold">Observações / Motivo:</label>
+                        {{ decisao_form.observacao }}
+                    </div>
+                    <button type="submit" name="decisao" class="btn btn-primary w-100 btn-lg shadow-sm">Confirmar
+                        Decisão</button>
+                </form>
+
+                {% elif avaria.status == 'AGUARDANDO_DEVOLUCAO' %}
+                <div class="alert alert-warning mb-3">
+                    <div class="fw-bold"><i class="bi bi-exclamation-circle"></i> Devolução Autorizada</div>
+                    <small>Aguardando dados de saída do transporte.</small>
+                </div>
+
+                <!-- Product and Value Editing Section -->
+                <h6 class="card-subtitle mb-3 text-muted border-bottom pb-2">Ajustar Produtos e Valores</h6>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-sm btn-outline-primary w-100 mb-2" data-bs-toggle="modal"
+                        data-bs-target="#editItensModal">
+                        <i class="bi bi-pencil-square"></i> Editar Produtos a Devolver
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-toggle="modal"
+                        data-bs-target="#editValorModal">
+                        <i class="bi bi-currency-dollar"></i> Ajustar Valor da NF
+                    </button>
+                </div>
+
+                <hr class="my-3">
+
+                <h6 class="card-subtitle mb-3 text-muted border-bottom pb-2">Iniciar Logística Reversa</h6>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label small text-uppercase fw-bold">Motorista</label>
+                        {{ devolucao_form.motorista_devolucao }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small text-uppercase fw-bold">Veículo</label>
+                        {{ devolucao_form.veiculo_devolucao }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small text-uppercase fw-bold">Carreta (Opcional)</label>
+                        {{ devolucao_form.veiculo_devolucao_carreta }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small text-uppercase fw-bold">Nota Fiscal de Devolução</label>
+                        {{ devolucao_form.nf_devolucao }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small text-uppercase fw-bold">Observações Extras</label>
+                        {{ devolucao_form.observacao_extra }}
+                    </div>
+                    <button type="submit" name="iniciar_devolucao" class="btn btn-info text-white w-100 shadow-sm"><i
+                            class="bi bi-truck"></i> Iniciar Transporte</button>
+                </form>
+
+                {% elif avaria.status == 'EM_ROTA_DEVOLUCAO' %}
+                <div class="alert alert-info">
+                    <h4><i class="bi bi-truck"></i> Em Rota</h4>
+                    <p class="mb-0">Produto em trânsito de devolução.</p>
+                </div>
+                <div class="bg-light p-3 rounded mb-3 border">
+                    <small class="d-block text-muted">Início: {{ avaria.data_inicio_devolucao|date:"d/m/Y H:i"
+                        }}</small>
+                    <small class="d-block text-muted">NF Dev: {{ avaria.nf_devolucao|default:"-" }}</small>
+                    <small class="d-block text-muted">Motorista: {{ avaria.motorista_devolucao.nome|default:"-"
+                        }}</small>
+                </div>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-uppercase">Foto do Canhoto/Entrega</label>
+                        <div class="input-group">
+                            <input type="file" name="arquivo_comprovante" class="form-control" required
+                                accept="image/*">
+                            <button class="btn btn-outline-secondary" type="button" title="Usar Câmera"
+                                onclick="openWebcam('input[type=file][name=arquivo_comprovante]')">
+                                <i class="bi bi-camera-fill"></i>
+                            </button>
+                        </div>
+                        <div class="form-text text-white-50">Obrigatório anexar foto para finalizar.</div>
+                    </div>
+                    <button type="submit" name="finalizar_devolucao" class="btn btn-success w-100 shadow-sm py-3"><i
+                            class="bi bi-check-lg"></i> Confirmar Entrega</button>
+                </form>
+
+                {% elif avaria.status == 'FINALIZADA' %}
+                <div class="text-center py-4">
+                    <div class="mb-3 text-success">
+                        <i class="bi bi-check-circle-fill" style="font-size: 4rem;"></i>
+                    </div>
+                    <h4 class="text-success">Finalizada</h4>
+                    <p class="text-muted">Motivo: {{ avaria.get_tipo_finalizacao_display }}</p>
+                    <p class="text-muted small">Encerrado em: {{ avaria.data_finalizacao|date:"d/m/Y H:i" }}</p>
+                </div>
+                <hr>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'avaria_print' avaria.id %}?fotos=1" target="_blank"
+                        class="btn btn-outline-primary">
+                        <i class="bi bi-printer"></i> Imprimir Completo (com Fotos)
+                    </a>
+                    <a href="{% url 'avaria_print' avaria.id %}?fotos=0" target="_blank"
+                        class="btn btn-outline-secondary">
+                        <i class="bi bi-printer"></i> Imprimir Simples (sem Fotos)
+                    </a>
+                </div>
+
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize tooltips/popovers if bootstrap bundle is present
+
+    // NF Retention Toggle Logic
+    document.addEventListener('DOMContentLoaded', function () {
+        const radios = document.querySelectorAll('input[name="nf_retida_conferencia"]');
+        const divHoras = document.getElementById('div_horas_retencao');
+
+        function toggleHoras() {
+            const selected = document.querySelector('input[name="nf_retida_conferencia"]:checked');
+            if (selected && selected.value === 'SIM') {
+                divHoras.style.display = 'block';
+                // Find input inside and make required
+                const input = divHoras.querySelector('input');
+                if (input) input.setAttribute('required', 'required');
+            } else {
+                divHoras.style.display = 'none';
+                const input = divHoras.querySelector('input');
+                if (input) {
+                    input.removeAttribute('required');
+                    input.value = '';
+                }
+            }
+        }
+
+        radios.forEach(radio => radio.addEventListener('change', toggleHoras));
+        toggleHoras(); // Run on load
+
+        // Devolucao Fields Toggle Logic
+        const acaoRadios = document.querySelectorAll('input[name="acao"]');
+        const divDevolucao = document.getElementById('div_devolucao_fields');
+
+        function toggleDevolucaoFields() {
+            const selected = document.querySelector('input[name="acao"]:checked');
+            if (selected && selected.value === 'DEVOLVER') {
+                divDevolucao.style.display = 'block';
+            } else {
+                divDevolucao.style.display = 'none';
+            }
+        }
+
+        acaoRadios.forEach(radio => radio.addEventListener('change', toggleDevolucaoFields));
+        toggleDevolucaoFields(); // Run on load
+
+        // Remove item functionality
+        document.querySelectorAll('.remove-item').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const row = this.closest('.item-row');
+                if (confirm('É certo que deseja excluir este item?')) {
+                    row.remove();
+                }
+            });
+        });
+    });
+</script>
+
+<!-- Modal: Edit Items -->
+<div class="modal fade" id="editItensModal" tabindex="-1" aria-labelledby="editItensModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="editItensModalLabel"><i class="bi bi-box-seam"></i> Editar Produtos a
+                    Devolver</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div id="itens-container">
+                        {% for item in avaria.itens.all %}
+                        <div class="row mb-2 align-items-center item-row">
+                            <div class="col-md-5">
+                                <label class="form-label small">Produto</label>
+                                <input type="text" class="form-control" value="{{ item.produto.nome }}" readonly>
+                                <input type="hidden" name="item_id[]" value="{{ item.id }}">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Lote</label>
+                                <input type="text" class="form-control" name="lote[]"
+                                    value="{{ item.lote|default:'' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Quantidade</label>
+                                <input type="number" class="form-control" name="quantidade[]"
+                                    value="{{ item.quantidade }}" min="0">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Ação</label>
+                                <button type="button" class="btn btn-sm btn-danger w-100 remove-item"><i
+                                        class="bi bi-trash"></i></button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" name="update_itens" class="btn btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit Valor NF -->
+<div class="modal fade" id="editValorModal" tabindex="-1" aria-labelledby="editValorModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title" id="editValorModalLabel"><i class="bi bi-currency-dollar"></i> Ajustar Valor da
+                    NF</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Valor Atual: R$ {{ avaria.valor_nf|default:"0.00" }}</label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="novo_valor" class="form-label">Novo Valor</label>
+                        <input type="number" step="0.01" class="form-control" id="novo_valor" name="novo_valor"
+                            value="{{ avaria.valor_nf|default:'0.00' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="motivo_ajuste" class="form-label">Motivo do Ajuste</label>
+                        <textarea class="form-control" id="motivo_ajuste" name="motivo_ajuste" rows="3"
+                            placeholder="Descreva o motivo do ajuste..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" name="update_valor" class="btn btn-primary">Salvar Valor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

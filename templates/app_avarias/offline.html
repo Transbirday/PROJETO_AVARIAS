@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Offline{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card shadow-sm border-0">
+                <div class="card-body py-5">
+                    <i class="bi bi-cloud-slash text-secondary mb-4" style="font-size: 4rem;"></i>
+                    <h2 class="h4 mb-3">Você está Offline</h2>
+                    <p class="text-muted mb-4">
+                        Parece que você perdeu a conexão com a internet. <br>
+                        Algumas funcionalidades do sistema podem estar limitadas.
+                    </p>
+                    <button onclick="window.location.reload()" class="btn btn-primary px-4">
+                        <i class="bi bi-arrow-clockwise"></i> Tentar Novamente
+                    </button>
+                    <div class="mt-4">
+                        <a href="{% url 'dashboard' %}" class="btn btn-link text-decoration-none">Ver Dashboard
+                            (Cache)</a>
+                    </div>
+                </div>
+            </div>
+            <p class="mt-4 text-muted small">
+                Transbirday - Gestão de Avarias PWA
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

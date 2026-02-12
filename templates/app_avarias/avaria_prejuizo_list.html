@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Definição de Prejuízo{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4 text-white p-2 rounded" style="background-color: #0dcaf0;">
+            <i class="bi bi-cash-coin me-2"></i> Definição de Prejuízo (Logística Reversa Concluída)
+        </h2>
+
+        {% if avarias %}
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th># ID</th>
+                                <th>Criação</th>
+                                <th>Finalização</th>
+                                <th>Cliente</th>
+                                <th>Produto</th>
+                                <th>Valor NF</th>
+                                <th>NFD</th>
+                                <th>Motivo Devolução</th>
+                                <th style="min-width: 200px;">Responsabilidade</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for avaria in avarias %}
+                            <tr>
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="avaria_id" value="{{ avaria.pk }}">
+                                    <td><strong>{{ avaria.id }}</strong></td>
+                                    <td>{{ avaria.data_criacao|date:"d/m/Y" }}</td>
+                                    <td>{{ avaria.data_finalizacao|date:"d/m/Y" }}</td>
+                                    <td>{{ avaria.cliente.razao_social }}</td>
+                                    <td>{{ avaria.produto.nome }}</td>
+                                    <td>R$ {{ avaria.valor_nf }}</td>
+                                    <td>{{ avaria.nf_devolucao|default:"-" }}</td>
+                                    <td class="text-truncate" style="max-width: 150px;"
+                                        title="{{ avaria.observacoes }}">{{ avaria.observacoes|truncatechars:30 }}</td>
+                                    <td>
+                                        <select name="responsavel_prejuizo" class="form-select form-select-sm" required>
+                                            <option value="" selected disabled>Selecione...</option>
+                                            <option value="TRANSBIRDAY">TRANSBIRDAY (Nossa Culpa)</option>
+                                            <option value="CLIENTE">CLIENTE (Cobrar Deles)</option>
+                                            <option value="TRANSPORTADORA_TERCEIRA">TRANSPORTADORA TERCEIRA</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-check-lg"></i> Salvar
+                                        </button>
+                                    </td>
+                                </form>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-success mt-3 shadow-sm" role="alert">
+            <h4 class="alert-heading"><i class="bi bi-check-circle-fill"></i> Tudo em dia!</h4>
+            <p>Nenhuma avaria finalizada aguardando definição de prejuízo no momento.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
