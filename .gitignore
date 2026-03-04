@@ -19,3 +19,7 @@ env/
 # IDE
 .idea/
 .vscode/
+
+# Documentation / Manual
+gerar_manual.py
+Manual_Entrega_Projeto.pdf

@@ -8,6 +8,8 @@ urlpatterns = [
     # Auth
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', views.custom_logout, name='logout'),
+    path('alterar-senha/', auth_views.PasswordChangeView.as_view(), name='password_change'),
+    path('alterar-senha/sucesso/', auth_views.PasswordChangeDoneView.as_view(), name='password_change_done'),
     
     # Dashboard
     # Dashboard & Welcome

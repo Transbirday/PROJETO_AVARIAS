@@ -200,6 +200,7 @@
                     <hr class="text-white">
                     <div class="px-3">
                         <span class="text-white small">Usuário: {{ user.username }}</span><br>
+                        <a href="{% url 'password_change' %}" class="btn btn-link text-white-50 small text-decoration-none p-0 border-0 me-3">Alterar Senha</a>
                         <form action="{% url 'logout' %}" method="post" class="d-inline">
                             {% csrf_token %}
                             <button type="submit"
