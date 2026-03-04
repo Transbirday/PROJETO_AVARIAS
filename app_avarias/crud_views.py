@@ -8,6 +8,11 @@ from django.contrib import messages
 from django import forms
 from django.utils.safestring import mark_safe
 from django.utils import timezone
+from django.http import HttpResponse, JsonResponse
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 from .models import Condutor, Veiculo, Produto, Cliente, Usuario, Avaria, AvariaFoto, AvariaItem
 from .mixins import GroupRequiredMixin, SuperUserRequiredMixin
 from .decorators import superuser_required, group_required
@@ -560,6 +565,136 @@ def reactivate_usuario(request, pk):
     messages.success(request, f'Usuário "{obj.username}" reativado com sucesso!')
     return redirect('usuario_list')
 
+from reportlab.pdfbase import pdfmetrics
+@login_required
+@superuser_required
+def usuario_relatorio_pdf(request):
+    # Retrieve all non-superuser records
+    usuarios = Usuario.objects.filter(is_superuser=False).order_by('first_name')
+
+    # Create the HttpResponse object with the appropriate PDF headers.
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="relatorio_usuarios.pdf"'
+
+    # Landscape A4 size is approx 842.0 x 595.2 points
+    # Margins: 15 points each side -> 842 - 30 = 812 points writable width
+    USABLE_WIDTH = 812
+
+    # Create the PDF object handling tight margins
+    doc = SimpleDocTemplate(response, pagesize=landscape(A4),
+                            rightMargin=15, leftMargin=15,
+                            topMargin=20, bottomMargin=15)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    title_style = styles['Heading1']
+    title_style.alignment = 1 # Center
+    
+    # Metadata Styles
+    meta_style = styles['Normal']
+    meta_style.alignment = 2 # Right
+    meta_style.fontSize = 8
+
+    # Table Cell Text Styles (Right Aligned)
+    cell_style = styles['Normal'].clone('RightAlignedCell')
+    cell_style.alignment = 2 # Right
+    cell_style.fontSize = 9
+    cell_style.fontName = 'Helvetica'
+
+    # Empresa & Header Info
+    timestamp = timezone.localtime(timezone.now()).strftime("%d/%m/%Y às %H:%M:%S")
+    elements.append(Paragraph("<b>TRANSBIRDAY</b> - Relatório de Usuários Cadastrados", title_style))
+    elements.append(Paragraph(f"Gerado por: {request.user.get_full_name() or request.user.username}<br/>Data/Hora: {timestamp}", meta_style))
+    elements.append(Spacer(1, 15))
+
+    # Definir cabeçalho e inicializar arrays p/ rastrear a largura máxima
+    headers = ['Nome', 'Usuário (Login)', 'Nível de Acesso', 'Local de Atuação', 'Observações']
+    data = [headers]
+    
+    # FONT metrics info to calculate width
+    font_name = 'Helvetica'
+    font_size_header = 10
+    font_size_data = 9
+    padding_x = 12 # 6 on each side
+
+    # Determine base max widths from headers
+    max_widths = [
+        pdfmetrics.stringWidth(h, 'Helvetica-Bold', font_size_header) + padding_x 
+        for h in headers
+    ]
+    # Obs will stretch, no need to strictly track its text width unless we put something, but we just leave it 0-based for now.
+
+    # Raw row strings to calculate widths without Paragraph tags
+    for u in usuarios:
+        nome_str = u.first_name if u.first_name else "-"
+        login_str = u.username
+        acesso_str = u.get_nivel_acesso_display()
+        local_str = u.local_atuacao if u.local_atuacao else "-"
+        
+        row_strs = [nome_str, login_str, acesso_str, local_str, ""]
+        
+        # update max widths
+        for i, text in enumerate(row_strs):
+            if i < 4: # don't calculate for obs
+                w = pdfmetrics.stringWidth(text, font_name, font_size_data) + padding_x
+                if w > max_widths[i]:
+                    max_widths[i] = w
+
+        # For the table we wrap in paragraphs to be safe, though auto-width usually implies single line
+        # Using cell_style so paragraphs are also aligned right internally
+        data.append([
+            Paragraph(nome_str, cell_style),
+            Paragraph(login_str, cell_style),
+            Paragraph(acesso_str, cell_style), # Wrap this too so it behaves the same
+            Paragraph(local_str, cell_style),
+            "" # Empty Observações
+        ])
+
+    # Calculate final colWidths dynamically
+    # Limit max widths to reasonable values just in case one is crazy long
+    colWidths = [
+        min(max_widths[0], 250),
+        min(max_widths[1], 150),
+        min(max_widths[2], 120),
+        min(max_widths[3], 200)
+    ]
+    # The remainder goes to Observações
+    used_width = sum(colWidths)
+    obs_width = USABLE_WIDTH - used_width
+    if obs_width < 50: # fallback if somehow we overshoot
+        obs_width = 50
+        
+    colWidths.append(obs_width)
+
+    # Configurar Tabela
+    t = Table(data, colWidths=colWidths)
+
+    # Estilo da Tabela
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'RIGHT'), # All right-aligned
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), font_size_header),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 0), (-1, 0), 8),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('FONTNAME', (0, 1), (-1, -1), font_name),
+        ('FONTSIZE', (0, 1), (-1, -1), font_size_data),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        ('TOPPADDING', (0, 1), (-1, -1), 6),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.lightgrey)
+    ]))
+
+    elements.append(t)
+    
+    # Build the PDF
+    doc.build(elements)
+    
+    return response
+
 # --- ACTIONS ---
 def reactivate_condutor(request, pk):
     obj = get_object_or_404(Condutor, pk=pk)
@@ -588,8 +723,6 @@ def reactivate_cliente(request, pk):
     obj.save()
     messages.success(request, f'Cliente "{obj.razao_social}" reativado com sucesso!')
     return redirect('cliente_list')
-
-from django.http import JsonResponse
 
 def check_availability_api(request):
     """

@@ -53,6 +53,7 @@ urlpatterns = [
 
     # Usuarios
     path('usuarios/', crud_views.UsuarioListView.as_view(), name='usuario_list'),
+    path('usuarios/relatorio/pdf/', crud_views.usuario_relatorio_pdf, name='usuario_pdf'),
     path('usuarios/<int:pk>/', crud_views.UsuarioDetailView.as_view(), name='usuario_detail'),
     path('usuarios/<int:pk>/editar/', crud_views.UsuarioUpdateView.as_view(), name='usuario_update'),
     path('usuarios/<int:pk>/excluir/', crud_views.UsuarioDeleteView.as_view(), name='usuario_delete'),
